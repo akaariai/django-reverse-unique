@@ -56,7 +56,9 @@ Installation
 The requirement for ReverseUnique is Django 1.6+. You will need to place the
 reverse_unique directory in Python path, then just use it like done in above
 example. The tests (reverse_unique/tests.py) contain a couple more examples.
-No setup.py yet, sorry.
+Easiest way to install is::
+
+    pip install -e git://github.com/akaariai/django-reverse-unique.git#egg=reverse_unique
 
 Known issues
 ~~~~~~~~~~~~
