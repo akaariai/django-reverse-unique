@@ -3,7 +3,12 @@ django-reverse-unique
 
 A ReverseUnique model field implementation for Django
 
-The ReverseUnique field can be used to access fields in reverse direction.
+The ReverseUnique field can be used to access single model instances from
+the reverse side of ForeignKey. Essentially, ReverseUnique can be used to
+generate OneToOneField like behaviour from a ForeignKey. You will need an
+unique filter condition on the reverse ForeignKey relation so that there
+is at most one instance on the reverse side that can match.
+
 To be able to use reverse unique, you will need a unique constraint for the
 reverse side or otherwise know that only one instance on the reverse side can
 match.
