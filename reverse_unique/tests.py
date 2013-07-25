@@ -6,7 +6,8 @@ from django import forms
 
 from .test_models import (
     Article, ArticleTranslation, DefaultTranslationArticle,
-    DefaultTranslationArticleTranslation, Guest, Room, Reservation)
+    DefaultTranslationArticleTranslation, Guest, Room, Reservation,
+    Child, Rel1, Rel2)
 
 class ReverseUniqueTests(TestCase):
 
@@ -163,3 +164,21 @@ class FormsTests(TestCase):
         self.assertQuerysetEqual(
             Room.objects.exclude(current_reservation__guest=g1).order_by('pk'),
             [room2, room3], lambda x: x)
+
+class InheritanceTests(TestCase):
+    def test_simple_join(self):
+        c1 = Child.objects.create()
+        self.assertQuerysetEqual(
+            Child.objects.select_related('rel1'), [c1], lambda x: x)
+        self.assertQuerysetEqual(
+            Child.objects.select_related('rel2'), [c1], lambda x: x)
+        self.assertQuerysetEqual(
+            Child.objects.select_related('rel1', 'rel2'), [c1], lambda x: x)
+        Rel1.objects.create(f1='foo', parent=c1)
+        Rel2.objects.create(f1='foo', child=c1)
+        with self.assertNumQueries(1):
+            qs = list(Child.objects.select_related('rel1', 'rel2'))
+            self.assertEqual(
+                qs, [c1])
+            self.assertEqual(qs[0].rel1.f1, "foo")
+            self.assertEqual(qs[0].rel2.f1, "foo")
