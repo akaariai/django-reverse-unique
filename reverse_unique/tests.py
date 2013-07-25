@@ -5,7 +5,7 @@ from django.utils.translation import activate
 from django import forms
 
 from .test_models import (
-    Article, ArticleTranslation, DefaultTranslationArticle,
+    Article, ArticleTranslation, Lang, DefaultTranslationArticle,
     DefaultTranslationArticleTranslation, Guest, Room, Reservation,
     Child, Rel1, Rel2)
 
@@ -13,21 +13,23 @@ class ReverseUniqueTests(TestCase):
 
     def test_translations(self):
         activate('fi')
+        fi = Lang.objects.create(code="fi")
+        en = Lang.objects.create(code="en")
         a1 = Article.objects.create(pub_date=datetime.date.today())
-        at1_fi = ArticleTranslation(article=a1, lang='fi', title='Otsikko', body='Diipadaapa')
+        at1_fi = ArticleTranslation(article=a1, lang=fi, title='Otsikko', body='Diipadaapa')
         at1_fi.save()
-        at2_en = ArticleTranslation(article=a1, lang='en', title='Title', body='Lalalalala')
+        at2_en = ArticleTranslation(article=a1, lang=en, title='Title', body='Lalalalala')
         at2_en.save()
         with self.assertNumQueries(1):
             fetched = Article.objects.select_related('active_translation').get(
                 active_translation__title='Otsikko')
             self.assertTrue(fetched.active_translation.title == 'Otsikko')
         a2 = Article.objects.create(pub_date=datetime.date.today())
-        at2_fi = ArticleTranslation(article=a2, lang='fi', title='Atsikko', body='Diipadaapa',
+        at2_fi = ArticleTranslation(article=a2, lang=fi, title='Atsikko', body='Diipadaapa',
                                     abstract='dipad')
         at2_fi.save()
         a3 = Article.objects.create(pub_date=datetime.date.today())
-        at3_en = ArticleTranslation(article=a3, lang='en', title='A title', body='lalalalala',
+        at3_en = ArticleTranslation(article=a3, lang=en, title='A title', body='lalalalala',
                                     abstract='lala')
         at3_en.save()
         # Test model initialization with active_translation field.
@@ -52,10 +54,12 @@ class ReverseUniqueTests(TestCase):
 
     def test_descriptor(self):
         activate('fi')
+        fi = Lang.objects.create(code="fi")
+        en = Lang.objects.create(code="en")
         a1 = Article.objects.create(pub_date=datetime.date.today())
-        at1_fi = ArticleTranslation(article=a1, lang='fi', title='Otsikko', body='Diipadaapa')
+        at1_fi = ArticleTranslation(article=a1, lang=fi, title='Otsikko', body='Diipadaapa')
         at1_fi.save()
-        at2_en = ArticleTranslation(article=a1, lang='en', title='Title', body='Lalalalala')
+        at2_en = ArticleTranslation(article=a1, lang=en, title='Title', body='Lalalalala')
         at2_en.save()
         with self.assertNumQueries(1):
             self.assertEqual(a1.active_translation.title, "Otsikko")

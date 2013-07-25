@@ -49,7 +49,7 @@ class ReverseUnique(ForeignObject):
         qs = self.rel.to.objects.filter(self.filters).query
         my_table = self.model._meta.db_table
         rel_table = self.rel.to._meta.db_table
-        illegal_tables = set(qs.tables).difference(
+        illegal_tables = set([t for t in qs.tables if qs.alias_refcount[t] > 0]).difference(
             set([my_table, rel_table]))
         if illegal_tables:
             raise Exception("This field's filters refers illegal tables: %s" % illegal_tables)

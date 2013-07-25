@@ -13,9 +13,15 @@ class Article(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+class Lang(models.Model):
+    code = models.CharField(max_length=2, primary_key=True)
+
+    class Meta:
+        app_label = 'reverse_unique'
+
 class ArticleTranslation(models.Model):
     article = models.ForeignKey(Article)
-    lang = models.CharField(max_length=2)
+    lang = models.ForeignKey(Lang)
     title = models.CharField(max_length=100)
     abstract = models.CharField(max_length=100, null=True)
     body = models.TextField()
