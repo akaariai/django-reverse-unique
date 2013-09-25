@@ -186,3 +186,12 @@ class InheritanceTests(TestCase):
                 qs, [c1])
             self.assertEqual(qs[0].rel1.f1, "foo")
             self.assertEqual(qs[0].rel2.f1, "foo")
+
+    def test_through_parent(self):
+        c1 = Child.objects.create()
+        c2 = Child.objects.create()
+        Rel1.objects.create(f1='foobar', parent=c1)
+        Rel1.objects.create(f1='foobaz', parent=c2)
+        self.assertEqual(
+            Child.objects.get(rel1_child__f1__endswith='baz'), c2
+        )

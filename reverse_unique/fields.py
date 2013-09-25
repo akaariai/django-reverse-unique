@@ -32,8 +32,9 @@ class ReverseUnique(ForeignObject):
 
     def resolve_related_fields(self):
         if self.through is None:
+            possible_models = [self.model] + self.model._meta.parents.keys()
             possible_targets = [f for f in self.rel.to._meta.concrete_fields
-                                if f.rel and f.rel.to == self.model]
+                                if f.rel and f.rel.to in possible_models]
             if len(possible_targets) != 1:
                 raise Exception("Found %s target fields instead of one, the fields found were %s."
                                 % (len(possible_targets), [f.name for f in possible_targets]))

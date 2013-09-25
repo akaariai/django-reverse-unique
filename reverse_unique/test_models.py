@@ -96,6 +96,7 @@ class Rel1(models.Model):
 
 class Child(Parent):
     rel2 = ReverseUnique("Rel2", filters=Q(f1="foo"))
+    rel1_child = ReverseUnique("Rel1", filters=Q(f1__startswith="foo"))
 
     class Meta:
         app_label = 'reverse_unique'
