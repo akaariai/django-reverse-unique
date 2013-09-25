@@ -5,6 +5,7 @@ from django.db.models import Q, F
 from django.utils.translation import get_language
 from reverse_unique import ReverseUnique
 
+
 class Article(models.Model):
     pub_date = models.DateField()
     active_translation = ReverseUnique(
@@ -13,11 +14,13 @@ class Article(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+
 class Lang(models.Model):
     code = models.CharField(max_length=2, primary_key=True)
 
     class Meta:
         app_label = 'reverse_unique'
+
 
 class ArticleTranslation(models.Model):
     article = models.ForeignKey(Article)
@@ -45,6 +48,7 @@ class DefaultTranslationArticle(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+
 class DefaultTranslationArticleTranslation(models.Model):
     article = models.ForeignKey(DefaultTranslationArticle)
     lang = models.CharField(max_length=2)
@@ -63,6 +67,7 @@ class Guest(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+
 class Room(models.Model):
     current_reservation = ReverseUnique(
         "Reservation", through='reservations',
@@ -71,6 +76,7 @@ class Room(models.Model):
 
     class Meta:
         app_label = 'reverse_unique'
+
 
 class Reservation(models.Model):
     room = models.ForeignKey(Room, related_name='reservations')
@@ -81,11 +87,14 @@ class Reservation(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+
 class Parent(models.Model):
     rel1 = ReverseUnique("Rel1", filters=Q(f1="foo"))
+    uniq_field = models.CharField(max_length=10, unique=True, null=True)
 
     class Meta:
         app_label = 'reverse_unique'
+
 
 class Rel1(models.Model):
     parent = models.ForeignKey(Parent, related_name="rel1list")
@@ -94,15 +103,31 @@ class Rel1(models.Model):
     class Meta:
         app_label = 'reverse_unique'
 
+
 class Child(Parent):
     rel2 = ReverseUnique("Rel2", filters=Q(f1="foo"))
 
     class Meta:
         app_label = 'reverse_unique'
 
+
+class AnotherChild(Child):
+    rel1_child = ReverseUnique("Rel1", filters=Q(f1__startswith="foo"))
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+
 class Rel2(models.Model):
     child = models.ForeignKey(Child, related_name="rel2list")
     f1 = models.CharField(max_length=10)
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+
+class Rel3(models.Model):
+    a_model = models.ForeignKey(Parent, to_field='uniq_field')
 
     class Meta:
         app_label = 'reverse_unique'
