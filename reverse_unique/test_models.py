@@ -83,6 +83,7 @@ class Reservation(models.Model):
 
 class Parent(models.Model):
     rel1 = ReverseUnique("Rel1", filters=Q(f1="foo"))
+    uniq_field = models.CharField(max_length=10, unique=True, null=True)
 
     class Meta:
         app_label = 'reverse_unique'
@@ -96,6 +97,11 @@ class Rel1(models.Model):
 
 class Child(Parent):
     rel2 = ReverseUnique("Rel2", filters=Q(f1="foo"))
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+class AnotherChild(Child):
     rel1_child = ReverseUnique("Rel1", filters=Q(f1__startswith="foo"))
 
     class Meta:
@@ -104,6 +110,12 @@ class Child(Parent):
 class Rel2(models.Model):
     child = models.ForeignKey(Child, related_name="rel2list")
     f1 = models.CharField(max_length=10)
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+class Rel3(models.Model):
+    a_model = models.ForeignKey(Parent, to_field='uniq_field')
 
     class Meta:
         app_label = 'reverse_unique'

@@ -1,13 +1,16 @@
 import datetime
 
+from django import forms
+from django.db import models
 from django.test import TestCase
 from django.utils.translation import activate
-from django import forms
+
+from reverse_unique import ReverseUnique
 
 from .test_models import (
     Article, ArticleTranslation, Lang, DefaultTranslationArticle,
     DefaultTranslationArticleTranslation, Guest, Room, Reservation,
-    Child, Rel1, Rel2)
+    Parent, Child, AnotherChild, Rel1, Rel2)
 
 class ReverseUniqueTests(TestCase):
 
@@ -185,13 +188,36 @@ class InheritanceTests(TestCase):
             self.assertEqual(
                 qs, [c1])
             self.assertEqual(qs[0].rel1.f1, "foo")
-            self.assertEqual(qs[0].rel2.f1, "foo")
+
+    def test_value_must_be_found_from_local_model(self):
+        class FailingChild(Parent):
+            rev_uniq = ReverseUnique("Rel3", filters=())
+
+            class Meta:
+                app_label = 'reverse_unique'
+
+        with self.assertRaises(AssertionError):
+            # Unfortunately we get the error only at first query, not at
+            # model definition time.
+            FailingChild.objects.filter(rev_uniq__pk__contains=1)
+
+        class FailingChild2(Parent):
+            parent_ptr = models.OneToOneField(Parent, parent_link=True, to_field='uniq_field')
+            rel4 = ReverseUnique("Rel1", filters=())
+
+            class Meta:
+                app_label = 'reverse_unique'
+
+        with self.assertRaises(AssertionError):
+            # The local model doesn't contain parent's id - so can't generate
+            # working query...
+            FailingChild2.objects.filter(rel4__id__contains=1)
 
     def test_through_parent(self):
-        c1 = Child.objects.create()
-        c2 = Child.objects.create()
+        c1 = AnotherChild.objects.create(uniq_field='1')
+        c2 = AnotherChild.objects.create(uniq_field='2')
         Rel1.objects.create(f1='foobar', parent=c1)
         Rel1.objects.create(f1='foobaz', parent=c2)
         self.assertEqual(
-            Child.objects.get(rel1_child__f1__endswith='baz'), c2
+            AnotherChild.objects.get(rel1_child__f1__endswith='baz'), c2
         )
