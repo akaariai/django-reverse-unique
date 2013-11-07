@@ -75,6 +75,17 @@ class ReverseUniqueTests(TestCase):
         with self.assertNumQueries(1):
             self.assertEqual(a1.active_translation.title, "Title")
 
+    def test_nullable(self):
+        a1 = Article.objects.create(pub_date=datetime.date.today())
+
+        self.assertEqual(a1.active_translation, None)
+
+    def test_non_nullable(self):
+        a1 = Article.objects.create(pub_date=datetime.date.today())
+
+        with self.assertRaises(ArticleTranslation.DoesNotExist):
+            a1.active_translation_nonnull
+
     def test_default_trans_article(self):
         activate('fi')
         a1 = DefaultTranslationArticle.objects.create(

@@ -13,9 +13,12 @@ class ReverseUniqueDescriptor(ReverseSingleRelatedObjectDescriptor):
     def __get__(self, instance, *args, **kwargs):
         try:
             return super(ReverseUniqueDescriptor, self).__get__(instance, *args, **kwargs)
-        except self.field.rel.to.DoesNotExist:
+        except self.field.rel.to.DoesNotExist as e:
             setattr(instance, self.cache_name, None)
-            return None
+            if self.field.null:
+                return None
+            else:
+                raise e
 
 
 class ReverseUnique(ForeignObject):
@@ -26,8 +29,8 @@ class ReverseUnique(ForeignObject):
         self.through = kwargs.pop('through', None)
         kwargs['from_fields'] = []
         kwargs['to_fields'] = []
-        kwargs['null'] = True
         kwargs['related_name'] = '+'
+        kwargs.setdefault('null', True)
         super(ReverseUnique, self).__init__(*args, **kwargs)
 
     def resolve_related_fields(self):
