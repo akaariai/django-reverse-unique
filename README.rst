@@ -1,7 +1,7 @@
 django-reverse-unique
 =====================
 
-A ReverseUnique model field implementation for Django
+A ReverseUnique and LatestRelated model field implementations for Django
 
 The ReverseUnique field can be used to access single model instances from
 the reverse side of ForeignKey. Essentially, ReverseUnique can be used to
@@ -9,12 +9,65 @@ generate OneToOneField like behaviour in the reverse direction of a normal
 ForeignKey. The idea is to add an unique filter condition when traversing the
 foreign key to reverse direction.
 
+LatestRelated can be used to fetch latest object from a related model by some
+field. The typical example is messaging board threads, and posts to each thread.
+One typically wants to construct a list view ordered by latest post to each
+thread, and also show the latest post title (or expert, or poster) for each
+thread. LatestRelated allows one to filter(), select_related(), order_by()
+and so on on latest related object.
+
 To be able to use reverse unique, you will need a unique constraint for the
 reverse side or otherwise know that only one instance on the reverse side can
 match.
 
-Example
-~~~~~~~
+LatestRelated example
+~~~~~~~~~~~~~~~~~~~~~
+
+This example is directly from the tests. The models are::
+
+    class Task(models.Model):
+        name = models.TextField()
+        last_taskmodification = LatestRelated("TaskModification", by='-created')
+
+        class Meta:
+            app_label = 'reverse_unique'
+
+
+    class TaskModification(models.Model):
+        task = models.ForeignKey(Task)
+        modification = models.TextField()
+        created = models.DateTimeField()
+
+        class Meta:
+            app_label = 'reverse_unique'
+            unique_together = [('task', 'created')]
+
+Here the last_taskmodification field is defined so that it will fetch the
+last modification by the TaskModification model's created field.
+
+Example queries::
+
+    self.t1 = Task.objects.create(name='Foo')
+    self.t2 = Task.objects.create(name='Foo2')
+    self.t1_tm1 = TaskModification.objects.create(task=self.t1, created=datetime.datetime.now(), modification='Earlier')
+    self.t1_tm2 = TaskModification.objects.create(task=self.t1, created=datetime.datetime.now(), modification='Later')
+    self.t2_tm1 = TaskModification.objects.create(task=self.t2, created=datetime.datetime.now(), modification='Earlier2')
+    self.t2_tm2 = TaskModification.objects.create(task=self.t2, created=datetime.datetime.now(), modification='Later2')
+    with assertNumQueries(1):
+        qs = Task.objects.select_related('last_taskmodification').order_by('pk')
+        self.assertEqual(len(qs), 2)
+        self.assertEqual(qs[0], self.t1)
+        self.assertEqual(qs[1], self.t2)
+        self.assertEqual(qs[0].last_taskmodification, self.t1_tm2)
+        self.assertEqual(qs[1].last_taskmodification, self.t2_tm2)
+    # Fetch latest threads
+    Task.objects.order_by('last_taskmodification__created')[0:10]
+    # Fetch threads not touched after start of 2014
+    Task.objecs.filter(last_taskmodification__created__lte=datetime.date(2014, 01, 01))
+
+
+ReverseUnique Example
+~~~~~~~~~~~~~~~~~~~~~
 
 It is always nice to see actual use cases. We will model employees with time
 dependent salaries in this example. This use case could be modelled as::

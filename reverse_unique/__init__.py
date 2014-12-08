@@ -1,1 +1,1 @@
-from .fields import ReverseUnique
+from .fields import ReverseUnique, LatestRelated  # noqa

@@ -10,7 +10,7 @@ from reverse_unique import ReverseUnique
 from .test_models import (
     Article, ArticleTranslation, Lang, DefaultTranslationArticle,
     DefaultTranslationArticleTranslation, Guest, Room, Reservation,
-    Parent, Child, AnotherChild, Rel1, Rel2)
+    Parent, Child, AnotherChild, Rel1, Rel2, Task, TaskModification)
 
 class ReverseUniqueTests(TestCase):
 
@@ -198,10 +198,11 @@ class InheritanceTests(TestCase):
             class Meta:
                 app_label = 'reverse_unique'
 
-        with self.assertRaisesMessage(ValueError,
-            'The field(s) uniq_field of model reverse_unique.Parent which '
-            'reverse_unique.Rel3.a_model is pointing to cannot be found from '
-            'reverse_unique.FailingChild. Add ReverseUnique to parent instead.'):
+        with self.assertRaisesMessage(
+                ValueError,
+                'The field(s) uniq_field of model reverse_unique.Parent which '
+                'reverse_unique.Rel3.a_model is pointing to cannot be found from '
+                'reverse_unique.FailingChild. Add ReverseUnique to parent instead.'):
             # Unfortunately we get the error only at first query, not at
             # model definition time.
             FailingChild.objects.filter(rev_uniq__pk__contains=1)
@@ -213,10 +214,11 @@ class InheritanceTests(TestCase):
             class Meta:
                 app_label = 'reverse_unique'
 
-        with self.assertRaisesMessage(ValueError,
-            'The field(s) id of model reverse_unique.Parent which '
-            'reverse_unique.Rel1.parent is pointing to cannot be found from '
-            'reverse_unique.FailingChild2. Add ReverseUnique to parent instead.'):
+        with self.assertRaisesMessage(
+                ValueError,
+                'The field(s) id of model reverse_unique.Parent which '
+                'reverse_unique.Rel1.parent is pointing to cannot be found from '
+                'reverse_unique.FailingChild2. Add ReverseUnique to parent instead.'):
             # The local model doesn't contain parent's id - so can't generate
             # working query...
             FailingChild2.objects.filter(rel4__id__contains=1)
@@ -229,3 +231,25 @@ class InheritanceTests(TestCase):
         self.assertEqual(
             AnotherChild.objects.get(rel1_child__f1__endswith='baz'), c2
         )
+
+
+class LatestRelatedTests(TestCase):
+    def setUp(self):
+        self.t1 = Task.objects.create(name='Foo')
+        self.t2 = Task.objects.create(name='Foo2')
+        self.t1_tm1 = TaskModification.objects.create(task=self.t1, created=datetime.datetime.now(), modification='Earlier')
+        self.t1_tm2 = TaskModification.objects.create(task=self.t1, created=datetime.datetime.now(), modification='Later')
+        self.t2_tm1 = TaskModification.objects.create(task=self.t2, created=datetime.datetime.now(), modification='Earlier2')
+        self.t2_tm2 = TaskModification.objects.create(task=self.t2, created=datetime.datetime.now(), modification='Later2')
+
+    def test_latest_related(self):
+        self.assertTrue(Task.objects.filter(last_taskmodification__modification='Later').exists())
+
+    def test_select_latest_related(self):
+        with self.assertNumQueries(1):
+            qs = Task.objects.select_related('last_taskmodification').order_by('pk')
+            self.assertEqual(len(qs), 2)
+            self.assertEqual(qs[0], self.t1)
+            self.assertEqual(qs[1], self.t2)
+            self.assertEqual(qs[0].last_taskmodification, self.t1_tm2)
+            self.assertEqual(qs[1].last_taskmodification, self.t2_tm2)

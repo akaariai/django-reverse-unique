@@ -1,5 +1,7 @@
 from django.db.models.fields.related import (
     ReverseSingleRelatedObjectDescriptor, ForeignObject)
+from django.db.models import Max, Min
+from django.db.models.expressions import Col
 
 
 class ReverseUniqueDescriptor(ReverseSingleRelatedObjectDescriptor):
@@ -124,3 +126,70 @@ class ReverseUnique(ForeignObject):
     def contribute_to_class(self, cls, name):
         super(ReverseUnique, self).contribute_to_class(cls, name)
         setattr(cls, self.name, ReverseUniqueDescriptor(self))
+
+
+class LatestRelatedDescriptor(ReverseUniqueDescriptor):
+    pass
+
+
+class FakeWhere(object):
+    def __init__(self, join_cols, lhs_alias, rhs_alias):
+        self.join_cols, self.lhs_alias, self.rhs_alias = join_cols, lhs_alias, rhs_alias
+
+    def as_sql(self, compiler, connection):
+        qn = compiler.quote_name_unless_alias
+        qn2 = connection.ops.quote_name
+        sql = []
+        for index, (lhs_col, rhs_col) in enumerate(self.join_cols):
+            if index != 0:
+                sql.append(' AND ')
+            sql.append('%s.%s = %s.%s' % (
+                qn(self.lhs_alias),
+                qn2(lhs_col),
+                qn(self.rhs_alias),
+                qn2(rhs_col),
+            ))
+        return ' '.join(sql), []
+
+
+class LatestRelated(ReverseUnique):
+    def __init__(self, *args, **kwargs):
+        self.by = kwargs.pop('by')
+        kwargs['filters'] = []
+        super(LatestRelated, self).__init__(*args, **kwargs)
+
+    def get_extra_descriptor_filter(self, instance):
+        raise NotImplementedError("All access should go through LatestRelatedDescriptor!")
+
+    def get_extra_restriction(self, where_class, alias, related_alias):
+        """
+        Generates the part after AND in query like:
+            LEFT JOIN sometable ON maintable.id = sometable.maintable_id
+                                AND sometable.by_col = (
+                                    SELECT MAX(by_col) FROM sometable WHERE sometable.maintable_id = maintable.id
+                                )
+        """
+        # The sometable.by_col part
+        if self.by.startswith('-'):
+            order = 'desc'
+            by = self.by[1:]
+        else:
+            order = 'asc'
+            by = self.by
+        by_field = self.rel.to._meta.get_field(by)
+        lookup = by_field.get_lookup('exact')
+        lhs_col = Col(alias, by_field)
+        rhs_query = by_field.model._base_manager.all()
+        annotation = Max if order == 'desc' else Min
+        rhs_query = rhs_query.annotate(by=annotation(by)).values('by')
+        rhs_query = rhs_query.query
+        if (by_field.model._meta.db_table != alias):
+            rhs_query.change_aliases({by_field.model._meta.db_table: alias})
+        rhs_query.group_by = []
+        rhs_query.where = FakeWhere(self.get_joining_columns(), related_alias, alias)
+        lookup = lookup(lhs_col, rhs_query)
+        return lookup
+
+    def contribute_to_class(self, cls, name):
+        super(ReverseUnique, self).contribute_to_class(cls, name)
+        setattr(cls, self.name, LatestRelatedDescriptor(self))

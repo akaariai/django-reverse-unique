@@ -3,7 +3,7 @@ from datetime import date
 from django.db import models
 from django.db.models import Q, F
 from django.utils.translation import get_language
-from reverse_unique import ReverseUnique
+from reverse_unique import ReverseUnique, LatestRelated
 
 
 class Article(models.Model):
@@ -131,3 +131,41 @@ class Rel3(models.Model):
 
     class Meta:
         app_label = 'reverse_unique'
+
+
+class Task(models.Model):
+    name = models.TextField()
+    last_taskmodification = LatestRelated("TaskModification", by='-created')
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+
+class TaskModification(models.Model):
+    task = models.ForeignKey(Task)
+    modification = models.TextField()
+    created = models.DateTimeField()
+
+    class Meta:
+        app_label = 'reverse_unique'
+        unique_together = [('task', 'created')]
+
+
+class DenormalizedTask(models.Model):
+    name = models.TextField()
+    last_modification = models.DateTimeField()
+    last_taskmodification = LatestRelated(
+        "DenormalizedTaskModification", by=Q(created='denormalized_task__last_modification'))
+
+    class Meta:
+        app_label = 'reverse_unique'
+
+
+class DenomarlizedTaskModification(models.Model):
+    task = models.ForeignKey(DenormalizedTask)
+    modification = models.TextField()
+    created = models.DateTimeField()
+
+    class Meta:
+        app_label = 'reverse_unique'
+        unique_together = [('task', 'created')]
