@@ -65,6 +65,21 @@ Example queries::
     # Fetch threads not touched after start of 2014
     Task.objecs.filter(last_taskmodification__created__lte=datetime.date(2014, 01, 01))
 
+These queries will fetch the tasks and their associated latest modification, in
+a single query. The SQL looks something like this (for the select_related query)::
+    
+    SELECT "reverse_unique_task"."id", "reverse_unique_task"."name", "reverse_unique_taskmodification"."id",
+           "reverse_unique_taskmodification"."task_id", "reverse_unique_taskmodification"."modification",
+           "reverse_unique_taskmodification"."created"
+      FROM "reverse_unique_task"
+      LEFT OUTER JOIN "reverse_unique_taskmodification" ON (
+               "reverse_unique_task"."id" = "reverse_unique_taskmodification"."task_id"
+                AND ("reverse_unique_taskmodification"."created" =
+                        (SELECT MAX("reverse_unique_taskmodification"."created") AS "by"
+                           FROM "reverse_unique_taskmodification"
+                          WHERE "reverse_unique_task"."id" = "reverse_unique_taskmodification"."task_id"))
+            )
+
 
 ReverseUnique Example
 ~~~~~~~~~~~~~~~~~~~~~
