@@ -161,7 +161,7 @@ class DenormalizedTask(models.Model):
         app_label = 'reverse_unique'
 
 
-class DenomarlizedTaskModification(models.Model):
+class DenormalizedTaskModification(models.Model):
     task = models.ForeignKey(DenormalizedTask)
     modification = models.TextField()
     created = models.DateTimeField()

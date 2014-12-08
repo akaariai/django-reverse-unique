@@ -1,7 +1,10 @@
 from django.db.models.fields.related import (
     ReverseSingleRelatedObjectDescriptor, ForeignObject)
 from django.db.models import Max, Min
-from django.db.models.expressions import Col
+try:
+    from django.db.models.expressions import Col
+except ImportError:
+    from django.db.models.sql.datastructures import Col
 
 
 class ReverseUniqueDescriptor(ReverseSingleRelatedObjectDescriptor):
@@ -178,7 +181,7 @@ class LatestRelated(ReverseUnique):
             by = self.by
         by_field = self.rel.to._meta.get_field(by)
         lookup = by_field.get_lookup('exact')
-        lhs_col = Col(alias, by_field)
+        lhs_col = Col(alias, by_field, by_field)
         rhs_query = by_field.model._base_manager.all()
         annotation = Max if order == 'desc' else Min
         rhs_query = rhs_query.annotate(by=annotation(by)).values('by')
