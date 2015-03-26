@@ -12,6 +12,8 @@ class Article(models.Model):
     pub_date = models.DateField()
     active_translation = ReverseUnique(
         "ArticleTranslation", filters=Q(lang=get_language))
+    active_translation_nonnull = ReverseUnique(
+        "ArticleTranslation", filters=Q(lang=get_language), null=False)
 
     class Meta:
         app_label = 'reverse_unique'
