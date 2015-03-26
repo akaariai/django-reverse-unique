@@ -56,7 +56,6 @@ class ReverseUnique(ForeignObject):
             to_fields = self._find_parent_link(related_field)
         else:
             to_fields = [f.name for f in related_field.foreign_related_fields]
-        del self.through
         self.to_fields = [f.name for f in related_field.local_related_fields]
         self.from_fields = to_fields
         return super(ReverseUnique, self).resolve_related_fields()
@@ -124,3 +123,10 @@ class ReverseUnique(ForeignObject):
     def contribute_to_class(self, cls, name):
         super(ReverseUnique, self).contribute_to_class(cls, name)
         setattr(cls, self.name, ReverseUniqueDescriptor(self))
+
+    def deconstruct(self):
+        name, path, args, kwargs = super(ReverseUnique, self).deconstruct()
+        kwargs['filters'] = self.filters
+        if self.through is not None:
+            kwargs['through'] = self.through
+        return name, path, args, kwargs
