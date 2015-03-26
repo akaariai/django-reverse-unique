@@ -51,6 +51,7 @@ class ReverseUniqueTests(TestCase):
             [a1, a2])
 
     def test_foreign_key_raises_informative_does_not_exist(self):
+        assert False
         referrer = ArticleTranslation()
         with self.assertRaisesMessage(Article.DoesNotExist, 'ArticleTranslation has no article'):
             referrer.article
