@@ -1,6 +1,9 @@
 # -*- encoding: utf-8 -*-
+from __future__ import unicode_literals
+
 import os
 from setuptools import setup
+
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -12,7 +15,7 @@ setup(
     long_description=read('README.rst'),
     url='https://github.com/akaariai/django-reverse-unique',
     license='BSD',
-    author=u'Anssi Kääriäinen',
+    author='Anssi Kääriäinen',
     author_email='akaariai@gmail.com',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
