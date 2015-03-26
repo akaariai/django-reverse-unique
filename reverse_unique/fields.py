@@ -1,5 +1,13 @@
+import django
 from django.db.models.fields.related import (
     ReverseSingleRelatedObjectDescriptor, ForeignObject)
+
+if django.VERSION >= (1, 8):
+    def _get_related_field(model, name):
+        return model._meta.get_field(name).field
+else:
+    def _get_related_field(model, name):
+        return model._meta.get_field_by_name(name)[0].field
 
 
 class ReverseUniqueDescriptor(ReverseSingleRelatedObjectDescriptor):
@@ -40,7 +48,7 @@ class ReverseUnique(ForeignObject):
                                 % (len(possible_targets), [f.name for f in possible_targets]))
             related_field = possible_targets[0]
         else:
-            related_field = self.model._meta.get_field_by_name(self.through)[0].field
+            related_field = _get_related_field(self.model, self.through)
         if related_field.rel.to._meta.concrete_model != self.model._meta.concrete_model:
             # We have found a foreign key pointing to parent model.
             # This will only work if the fk is pointing to a value
