@@ -1,6 +1,14 @@
 django-reverse-unique
 =====================
 
+.. image:: https://travis-ci.org/akaariai/django-reverse-unique.svg?branch=master
+    :target: https://travis-ci.org/akaariai/django-reverse-unique
+    :alt: Build Status
+
+.. image:: https://coveralls.io/repos/akaariai/django-reverse-unique/badge.svg?branch=master
+    :target: https://coveralls.io/r/akaariai/django-reverse-unique?branch=master
+    :alt: Coverage Status
+
 A ReverseUnique model field implementation for Django
 
 The ReverseUnique field can be used to access single model instances from
@@ -48,7 +56,7 @@ Django-reverse-unique to the rescue! Lets change the Employee model to::
         name = models.TextField()
         current_salary = models.ReverseUnique(
             "EmployeeSalary",
-            filter=Q(valid_from__gte=datetime.now) & 
+            filter=Q(valid_from__gte=datetime.now) &
                    (Q(valid_until__isnull=True) | Q(valid_until__lte=datetime.now))
         )
 
