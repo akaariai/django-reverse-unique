@@ -108,8 +108,14 @@ class ReverseUnique(ForeignObject):
             curr_model = found_link.rel.to
         return [self.model._meta.get_ancestor_link(related_field.rel.to).name]
 
+    def get_filters(self):
+        if callable(self.filters):
+            return self.filters()
+        else:
+            return self.filters
+
     def get_extra_restriction(self, where_class, alias, related_alias):
-        qs = self.rel.to.objects.filter(self.filters).query
+        qs = self.rel.to.objects.filter(self.get_filters()).query
         my_table = self.model._meta.db_table
         rel_table = self.rel.to._meta.db_table
         illegal_tables = set([t for t in qs.tables if qs.alias_refcount[t] > 0]).difference(
@@ -121,7 +127,7 @@ class ReverseUnique(ForeignObject):
         return where
 
     def get_extra_descriptor_filter(self, instance):
-        return self.filters
+        return self.get_filters()
 
     def get_path_info(self):
         ret = super(ReverseUnique, self).get_path_info()

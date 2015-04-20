@@ -7,11 +7,13 @@ from django.db.models import Q, F
 from django.utils.translation import get_language
 from reverse_unique import ReverseUnique
 
+def filter_lang():
+    return Q(lang=get_language())
 
 class Article(models.Model):
     pub_date = models.DateField()
     active_translation = ReverseUnique(
-        "ArticleTranslation", filters=Q(lang=get_language))
+        "ArticleTranslation", filters=filter_lang)
 
     class Meta:
         app_label = 'reverse_unique'
@@ -43,7 +45,7 @@ class DefaultTranslationArticle(models.Model):
     pub_date = models.DateField()
     default_lang = models.CharField(max_length=2)
     active_translation = ReverseUnique(
-        "DefaultTranslationArticleTranslation", filters=Q(lang=get_language))
+        "DefaultTranslationArticleTranslation", filters=filter_lang)
     default_translation = ReverseUnique(
         "DefaultTranslationArticleTranslation", filters=Q(lang=F('article__default_lang')))
 
@@ -70,11 +72,15 @@ class Guest(models.Model):
         app_label = 'reverse_unique'
 
 
+def filter_reservations():
+    return Q(from_date__lte=date.today()) & (
+        Q(until_date__gte=date.today()) | Q(until_date__isnull=True))
+
+
 class Room(models.Model):
     current_reservation = ReverseUnique(
         "Reservation", through='reservations',
-        filters=(Q(from_date__lte=date.today) & (
-            Q(until_date__gte=date.today) | Q(until_date__isnull=True))))
+        filters=filter_reservations)
 
     class Meta:
         app_label = 'reverse_unique'
