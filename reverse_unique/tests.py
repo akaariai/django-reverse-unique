@@ -200,7 +200,8 @@ class InheritanceTests(TestCase):
             class Meta:
                 app_label = 'reverse_unique'
 
-        with self.assertRaisesMessage(ValueError,
+        with self.assertRaisesMessage(
+            ValueError,
             'The field(s) uniq_field of model reverse_unique.Parent which '
             'reverse_unique.Rel3.a_model is pointing to cannot be found from '
             'reverse_unique.FailingChild. Add ReverseUnique to parent instead.'):
@@ -215,7 +216,8 @@ class InheritanceTests(TestCase):
             class Meta:
                 app_label = 'reverse_unique'
 
-        with self.assertRaisesMessage(ValueError,
+        with self.assertRaisesMessage(
+            ValueError,
             'The field(s) id of model reverse_unique.Parent which '
             'reverse_unique.Rel1.parent is pointing to cannot be found from '
             'reverse_unique.FailingChild2. Add ReverseUnique to parent instead.'):
