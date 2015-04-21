@@ -152,6 +152,23 @@ class ReverseUniqueTests(TestCase):
             Room.objects.exclude(current_reservation__guest=g1).order_by('pk'),
             [room2, room3], lambda x: x)
 
+    def test_delete(self):
+        """
+        Deleting an object pointed to by reverse unique should not delete
+        the related model.
+        """
+        g1 = Guest.objects.create(name="John")
+        room1 = Room.objects.create()
+        today = datetime.date.today()
+        r1 = Reservation.objects.create(room=room1, guest=g1, from_date=today)
+        r1.delete()
+        self.assertQuerysetEqual(
+            Room.objects.all(), [room1], lambda x: x)
+        self.assertQuerysetEqual(
+            Reservation.objects.all(), [])
+        self.assertQuerysetEqual(
+            Guest.objects.all(), [g1], lambda x: x)
+
 
 class FormsTests(TestCase):
     # ForeignObjects should not have any form fields, currently the user needs

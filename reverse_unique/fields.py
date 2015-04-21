@@ -1,6 +1,7 @@
 import django
 from django.db.models.fields.related import (
     ReverseSingleRelatedObjectDescriptor, ForeignObject)
+from django.db import models
 
 if django.VERSION >= (1, 8):
     def _get_related_field(model, name):
@@ -36,6 +37,7 @@ class ReverseUnique(ForeignObject):
         kwargs['to_fields'] = []
         kwargs['null'] = True
         kwargs['related_name'] = '+'
+        kwargs['on_delete'] = models.DO_NOTHING
         super(ReverseUnique, self).__init__(*args, **kwargs)
 
     def resolve_related_fields(self):
