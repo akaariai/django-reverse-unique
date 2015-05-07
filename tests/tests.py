@@ -9,10 +9,11 @@ from django.utils.translation import activate
 
 from reverse_unique import ReverseUnique
 
-from .test_models import (
+from .models import (
     Article, ArticleTranslation, Lang, DefaultTranslationArticle,
     DefaultTranslationArticleTranslation, Guest, Room, Reservation,
     Parent, Child, AnotherChild, Rel1, Rel2)
+
 
 class ReverseUniqueTests(TestCase):
 
