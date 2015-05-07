@@ -7,18 +7,14 @@ python:
   - 3.4
 
 env:
-  - DJANGO=1.6
   - DJANGO=1.7
   - DJANGO=1.8
   - DJANGO=master
 
 matrix:
-  include:
-    - python: 2.6
-      env: DJANGO=1.6
   exclude:
-    - python: 3.4
-      env: DJANGO=1.6
+    - python: 3.2
+      env: DJANGO=master
   allow_failures:
     - env: DJANGO=master
 
