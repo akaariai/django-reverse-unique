@@ -7,8 +7,10 @@ from django.db.models import Q, F
 from django.utils.translation import get_language
 from reverse_unique import ReverseUnique
 
+
 def filter_lang():
     return Q(lang=get_language())
+
 
 class Article(models.Model):
     pub_date = models.DateField()
