@@ -219,10 +219,10 @@ class InheritanceTests(TestCase):
                 app_label = 'reverse_unique'
 
         with self.assertRaisesMessage(
-            ValueError,
-            'The field(s) uniq_field of model reverse_unique.Parent which '
-            'reverse_unique.Rel3.a_model is pointing to cannot be found from '
-            'reverse_unique.FailingChild. Add ReverseUnique to parent instead.'):
+                ValueError,
+                'The field(s) uniq_field of model reverse_unique.Parent which '
+                'reverse_unique.Rel3.a_model is pointing to cannot be found from '
+                'reverse_unique.FailingChild. Add ReverseUnique to parent instead.'):
             # Unfortunately we get the error only at first query, not at
             # model definition time.
             FailingChild.objects.filter(rev_uniq__pk__contains=1)
@@ -236,9 +236,9 @@ class InheritanceTests(TestCase):
 
         with self.assertRaisesMessage(
             ValueError,
-            'The field(s) id of model reverse_unique.Parent which '
-            'reverse_unique.Rel1.parent is pointing to cannot be found from '
-            'reverse_unique.FailingChild2. Add ReverseUnique to parent instead.'):
+                'The field(s) id of model reverse_unique.Parent which '
+                'reverse_unique.Rel1.parent is pointing to cannot be found from '
+                'reverse_unique.FailingChild2. Add ReverseUnique to parent instead.'):
             # The local model doesn't contain parent's id - so can't generate
             # working query...
             FailingChild2.objects.filter(rel4__id__contains=1)
