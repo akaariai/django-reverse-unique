@@ -1,6 +1,10 @@
 import django
-from django.db.models.fields.related import (
-    ReverseSingleRelatedObjectDescriptor, ForeignObject)
+try:
+    from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor as ForwardManyToOneDescriptor
+except ImportError:
+    from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
+
+from django.db.models.fields.related import ForeignObject
 from django.db import models
 
 if django.VERSION >= (1, 8):
@@ -11,7 +15,7 @@ else:
         return model._meta.get_field_by_name(name)[0].field
 
 
-class ReverseUniqueDescriptor(ReverseSingleRelatedObjectDescriptor):
+class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
     def __set__(self, instance, value):
         if instance is None:
             raise AttributeError("%s must be accessed via instance" % self.field.name)
