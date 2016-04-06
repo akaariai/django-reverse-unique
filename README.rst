@@ -36,7 +36,7 @@ dependent salaries in this example. This use case could be modelled as::
         valid_from = models.DateField()
         valid_until = models.DateField(null=True)
 
-It is possible to save data like "Anssi has salary of 10€ from 2000-1-1 to 2010-1-1,
+It is possible to save data like "Anssi has salary of 10€ from 2000-1-1 to 2009-12-31,
 and salary of 11€ from 2010-1-1 to infinity (modelled as None in the models).
 
 Unfortunately when using these models it isn't trivial to just fetch the
