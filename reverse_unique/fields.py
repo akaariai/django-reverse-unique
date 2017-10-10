@@ -1,4 +1,3 @@
-import django
 try:
     from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor as ForwardManyToOneDescriptor
 except ImportError:
@@ -6,13 +5,6 @@ except ImportError:
 
 from django.db.models.fields.related import ForeignObject
 from django.db import models
-
-if django.VERSION >= (1, 8):
-    def _get_related_field(model, name):
-        return model._meta.get_field(name).field
-else:
-    def _get_related_field(model, name):
-        return model._meta.get_field_by_name(name)[0].field
 
 
 class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
@@ -54,7 +46,7 @@ class ReverseUnique(ForeignObject):
                                 % (len(possible_targets), [f.name for f in possible_targets]))
             related_field = possible_targets[0]
         else:
-            related_field = _get_related_field(self.model, self.through)
+            related_field = self.model._meta.get_field(self.through).field
         if related_field.rel.to._meta.concrete_model != self.model._meta.concrete_model:
             # We have found a foreign key pointing to parent model.
             # This will only work if the fk is pointing to a value

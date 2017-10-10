@@ -16,5 +16,3 @@ INSTALLED_APPS = [
     'reverse_unique',
     'reverse_unique_tests',
 ]
-
-SILENCED_SYSTEM_CHECKS = ['1_7.W001']
