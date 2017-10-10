@@ -1,3 +1,5 @@
+import django
+
 try:
     from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor as ForwardManyToOneDescriptor
 except ImportError:
@@ -7,18 +9,32 @@ from django.db.models.fields.related import ForeignObject
 from django.db import models
 
 
+if django.VERSION >= (1, 9):
+    def get_remote_field(field):
+        return field.remote_field
+
+    def get_remote_field_model(field):
+        return field.remote_field.model
+else:
+    def get_remote_field(field):
+        return getattr(field, 'rel', None)
+
+    def get_remote_field_model(field):
+        return field.rel.to
+
+
 class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
     def __set__(self, instance, value):
         if instance is None:
             raise AttributeError("%s must be accessed via instance" % self.field.name)
         setattr(instance, self.cache_name, value)
-        if value is not None and not self.field.rel.multiple:
+        if value is not None and not get_remote_field(self.field).multiple:
             setattr(value, self.field.related.get_cache_name(), instance)
 
     def __get__(self, instance, *args, **kwargs):
         try:
             return super(ReverseUniqueDescriptor, self).__get__(instance, *args, **kwargs)
-        except self.field.rel.to.DoesNotExist:
+        except get_remote_field_model(self.field).DoesNotExist:
             setattr(instance, self.cache_name, None)
             return None
 
@@ -39,15 +55,15 @@ class ReverseUnique(ForeignObject):
     def resolve_related_fields(self):
         if self.through is None:
             possible_models = [self.model] + [m for m in self.model.__mro__ if hasattr(m, '_meta')]
-            possible_targets = [f for f in self.rel.to._meta.concrete_fields
-                                if f.rel and f.rel.to in possible_models]
+            possible_targets = [f for f in get_remote_field_model(self)._meta.concrete_fields
+                                if get_remote_field(f) and get_remote_field_model(f) in possible_models]
             if len(possible_targets) != 1:
                 raise Exception("Found %s target fields instead of one, the fields found were %s."
                                 % (len(possible_targets), [f.name for f in possible_targets]))
             related_field = possible_targets[0]
         else:
             related_field = self.model._meta.get_field(self.through).field
-        if related_field.rel.to._meta.concrete_model != self.model._meta.concrete_model:
+        if get_remote_field_model(related_field)._meta.concrete_model != self.model._meta.concrete_model:
             # We have found a foreign key pointing to parent model.
             # This will only work if the fk is pointing to a value
             # that can be found from the child model, too. This is
@@ -80,14 +96,14 @@ class ReverseUnique(ForeignObject):
         ancestor_links = []
         curr_model = self.model
         while True:
-            found_link = curr_model._meta.get_ancestor_link(related_field.rel.to)
+            found_link = curr_model._meta.get_ancestor_link(get_remote_field_model(related_field))
             if not found_link:
                 # OK, we found to parent model. Lets check that the pointed to
                 # field contains the correct value.
                 last_link = ancestor_links[-1]
                 if last_link.foreign_related_fields != related_field.foreign_related_fields:
                     curr_opts = curr_model._meta
-                    rel_opts = self.rel.to._meta
+                    rel_opts = get_remote_field_model(self)._meta
                     opts = self.model._meta
                     raise ValueError(
                         "The field(s) %s of model %s.%s which %s.%s.%s is "
@@ -103,8 +119,8 @@ class ReverseUnique(ForeignObject):
             if ancestor_links:
                 assert found_link.local_related_fields == ancestor_links[-1].foreign_related_fields
             ancestor_links.append(found_link)
-            curr_model = found_link.rel.to
-        return [self.model._meta.get_ancestor_link(related_field.rel.to).name]
+            curr_model = get_remote_field_model(found_link)
+        return [self.model._meta.get_ancestor_link(get_remote_field_model(related_field)).name]
 
     def get_filters(self):
         if callable(self.filters):
@@ -113,9 +129,10 @@ class ReverseUnique(ForeignObject):
             return self.filters
 
     def get_extra_restriction(self, where_class, alias, related_alias):
-        qs = self.rel.to.objects.filter(self.get_filters()).query
+        remote_model = get_remote_field_model(self)
+        qs = remote_model.objects.filter(self.get_filters()).query
         my_table = self.model._meta.db_table
-        rel_table = self.rel.to._meta.db_table
+        rel_table = remote_model._meta.db_table
         illegal_tables = set([t for t in qs.tables if qs.alias_refcount[t] > 0]).difference(
             set([my_table, rel_table]))
         if illegal_tables:

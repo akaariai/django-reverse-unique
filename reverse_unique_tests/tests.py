@@ -228,7 +228,9 @@ class InheritanceTests(TestCase):
             FailingChild.objects.filter(rev_uniq__pk__contains=1)
 
         class FailingChild2(Parent):
-            parent_ptr = models.OneToOneField(Parent, parent_link=True, to_field='uniq_field')
+            parent_ptr = models.OneToOneField(
+                Parent, on_delete=models.CASCADE, parent_link=True, to_field='uniq_field'
+            )
             rel4 = ReverseUnique("Rel1", filters=())
 
             class Meta:

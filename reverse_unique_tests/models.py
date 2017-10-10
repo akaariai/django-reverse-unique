@@ -29,8 +29,8 @@ class Lang(models.Model):
 
 
 class ArticleTranslation(models.Model):
-    article = models.ForeignKey(Article)
-    lang = models.ForeignKey(Lang)
+    article = models.ForeignKey(Article, on_delete=models.CASCADE)
+    lang = models.ForeignKey(Lang, on_delete=models.CASCADE)
     title = models.CharField(max_length=100)
     abstract = models.CharField(max_length=100, null=True)
     body = models.TextField()
@@ -56,7 +56,7 @@ class DefaultTranslationArticle(models.Model):
 
 
 class DefaultTranslationArticleTranslation(models.Model):
-    article = models.ForeignKey(DefaultTranslationArticle)
+    article = models.ForeignKey(DefaultTranslationArticle, on_delete=models.CASCADE)
     lang = models.CharField(max_length=2)
     title = models.CharField(max_length=100)
     abstract = models.CharField(max_length=100, null=True)
@@ -89,8 +89,8 @@ class Room(models.Model):
 
 
 class Reservation(models.Model):
-    room = models.ForeignKey(Room, related_name='reservations')
-    guest = models.ForeignKey(Guest)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='reservations')
+    guest = models.ForeignKey(Guest, on_delete=models.CASCADE)
     from_date = models.DateField()
     until_date = models.DateField(null=True)  # NULL means reservation "forever".
 
@@ -107,7 +107,7 @@ class Parent(models.Model):
 
 
 class Rel1(models.Model):
-    parent = models.ForeignKey(Parent, related_name="rel1list")
+    parent = models.ForeignKey(Parent, on_delete=models.CASCADE, related_name="rel1list")
     f1 = models.CharField(max_length=10)
 
     class Meta:
@@ -129,7 +129,7 @@ class AnotherChild(Child):
 
 
 class Rel2(models.Model):
-    child = models.ForeignKey(Child, related_name="rel2list")
+    child = models.ForeignKey(Child, on_delete=models.CASCADE, related_name="rel2list")
     f1 = models.CharField(max_length=10)
 
     class Meta:
@@ -137,7 +137,7 @@ class Rel2(models.Model):
 
 
 class Rel3(models.Model):
-    a_model = models.ForeignKey(Parent, to_field='uniq_field')
+    a_model = models.ForeignKey(Parent, on_delete=models.CASCADE, to_field='uniq_field')
 
     class Meta:
         app_label = 'reverse_unique'
