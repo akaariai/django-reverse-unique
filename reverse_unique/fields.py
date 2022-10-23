@@ -27,7 +27,7 @@ class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
     def __set__(self, instance, value):
         if instance is None:
             raise AttributeError("%s must be accessed via instance" % self.field.name)
-        setattr(instance, self.cache_name, value)
+        instance.__dict__[self.field.get_cache_name()] = value
         if value is not None and not get_remote_field(self.field).multiple:
             setattr(value, self.field.related.get_cache_name(), instance)
 
@@ -35,7 +35,7 @@ class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
         try:
             return super(ReverseUniqueDescriptor, self).__get__(instance, *args, **kwargs)
         except get_remote_field_model(self.field).DoesNotExist:
-            setattr(instance, self.cache_name, None)
+            instance.__dict__[self.field.get_cache_name()] = None
             return None
 
 
@@ -133,7 +133,7 @@ class ReverseUnique(ForeignObject):
         qs = remote_model.objects.filter(self.get_filters()).query
         my_table = self.model._meta.db_table
         rel_table = remote_model._meta.db_table
-        illegal_tables = set([t for t in qs.tables if qs.alias_refcount[t] > 0]).difference(
+        illegal_tables = set([t for t in qs.alias_map if qs.alias_refcount[t] > 0]).difference(
             set([my_table, rel_table]))
         if illegal_tables:
             raise Exception("This field's filters refers illegal tables: %s" % illegal_tables)
@@ -144,8 +144,8 @@ class ReverseUnique(ForeignObject):
     def get_extra_descriptor_filter(self, instance):
         return self.get_filters()
 
-    def get_path_info(self):
-        ret = super(ReverseUnique, self).get_path_info()
+    def get_path_info(self, filtered_relation):
+        ret = super(ReverseUnique, self).get_path_info(filtered_relation)
         assert len(ret) == 1
         return [ret[0]._replace(direct=False)]
 
