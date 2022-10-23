@@ -128,7 +128,7 @@ class ReverseUnique(ForeignObject):
         else:
             return self.filters
 
-    def get_extra_restriction(self, where_class, alias, related_alias):
+    def _get_extra_restriction(self, alias, related_alias):
         remote_model = get_remote_field_model(self)
         qs = remote_model.objects.filter(self.get_filters()).query
         my_table = self.model._meta.db_table
@@ -141,11 +141,17 @@ class ReverseUnique(ForeignObject):
         where.relabel_aliases({my_table: related_alias, rel_table: alias})
         return where
 
+    if django.VERSION[0] >= 4:
+        get_extra_restriction = _get_extra_restriction
+    else:
+        def get_extra_restriction(self, where_class, alias, related_alias):
+            return self._get_extra_restriction(alias, related_alias)
+
     def get_extra_descriptor_filter(self, instance):
         return self.get_filters()
 
-    def get_path_info(self, filtered_relation):
-        ret = super(ReverseUnique, self).get_path_info(filtered_relation)
+    def get_path_info(self, *args, **kwargs):
+        ret = super(ReverseUnique, self).get_path_info(*args, **kwargs)
         assert len(ret) == 1
         return [ret[0]._replace(direct=False)]
 
