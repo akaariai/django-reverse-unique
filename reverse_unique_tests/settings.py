@@ -16,3 +16,5 @@ INSTALLED_APPS = [
     'reverse_unique',
     'reverse_unique_tests',
 ]
+
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
