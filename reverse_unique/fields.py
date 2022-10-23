@@ -1,26 +1,7 @@
 import django
-
-try:
-    from django.db.models.fields.related import ReverseSingleRelatedObjectDescriptor as ForwardManyToOneDescriptor
-except ImportError:
-    from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
-
-from django.db.models.fields.related import ForeignObject
 from django.db import models
-
-
-if django.VERSION >= (1, 9):
-    def get_remote_field(field):
-        return field.remote_field
-
-    def get_remote_field_model(field):
-        return field.remote_field.model
-else:
-    def get_remote_field(field):
-        return getattr(field, 'rel', None)
-
-    def get_remote_field_model(field):
-        return field.rel.to
+from django.db.models.fields.related import ForeignObject
+from django.db.models.fields.related_descriptors import ForwardManyToOneDescriptor
 
 
 class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
@@ -28,13 +9,13 @@ class ReverseUniqueDescriptor(ForwardManyToOneDescriptor):
         if instance is None:
             raise AttributeError("%s must be accessed via instance" % self.field.name)
         instance.__dict__[self.field.get_cache_name()] = value
-        if value is not None and not get_remote_field(self.field).multiple:
+        if value is not None and not self.field.remote_field.multiple:
             setattr(value, self.field.related.get_cache_name(), instance)
 
     def __get__(self, instance, *args, **kwargs):
         try:
-            return super(ReverseUniqueDescriptor, self).__get__(instance, *args, **kwargs)
-        except get_remote_field_model(self.field).DoesNotExist:
+            return super().__get__(instance, *args, **kwargs)
+        except self.field.remote_field.model.DoesNotExist:
             instance.__dict__[self.field.get_cache_name()] = None
             return None
 
@@ -50,20 +31,20 @@ class ReverseUnique(ForeignObject):
         kwargs['null'] = True
         kwargs['related_name'] = '+'
         kwargs['on_delete'] = models.DO_NOTHING
-        super(ReverseUnique, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def resolve_related_fields(self):
         if self.through is None:
             possible_models = [self.model] + [m for m in self.model.__mro__ if hasattr(m, '_meta')]
-            possible_targets = [f for f in get_remote_field_model(self)._meta.concrete_fields
-                                if get_remote_field(f) and get_remote_field_model(f) in possible_models]
+            possible_targets = [f for f in self.remote_field.model._meta.concrete_fields
+                                if f.remote_field and f.remote_field.model in possible_models]
             if len(possible_targets) != 1:
                 raise Exception("Found %s target fields instead of one, the fields found were %s."
                                 % (len(possible_targets), [f.name for f in possible_targets]))
             related_field = possible_targets[0]
         else:
             related_field = self.model._meta.get_field(self.through).field
-        if get_remote_field_model(related_field)._meta.concrete_model != self.model._meta.concrete_model:
+        if related_field.remote_field.model._meta.concrete_model != self.model._meta.concrete_model:
             # We have found a foreign key pointing to parent model.
             # This will only work if the fk is pointing to a value
             # that can be found from the child model, too. This is
@@ -80,7 +61,7 @@ class ReverseUnique(ForeignObject):
             to_fields = [f.name for f in related_field.foreign_related_fields]
         self.to_fields = [f.name for f in related_field.local_related_fields]
         self.from_fields = to_fields
-        return super(ReverseUnique, self).resolve_related_fields()
+        return super().resolve_related_fields()
 
     def _find_parent_link(self, related_field):
         """
@@ -96,14 +77,14 @@ class ReverseUnique(ForeignObject):
         ancestor_links = []
         curr_model = self.model
         while True:
-            found_link = curr_model._meta.get_ancestor_link(get_remote_field_model(related_field))
+            found_link = curr_model._meta.get_ancestor_link(related_field.remote_field.model)
             if not found_link:
                 # OK, we found to parent model. Lets check that the pointed to
                 # field contains the correct value.
                 last_link = ancestor_links[-1]
                 if last_link.foreign_related_fields != related_field.foreign_related_fields:
                     curr_opts = curr_model._meta
-                    rel_opts = get_remote_field_model(self)._meta
+                    rel_opts = self.remote_field.model._meta
                     opts = self.model._meta
                     raise ValueError(
                         "The field(s) %s of model %s.%s which %s.%s.%s is "
@@ -119,8 +100,8 @@ class ReverseUnique(ForeignObject):
             if ancestor_links:
                 assert found_link.local_related_fields == ancestor_links[-1].foreign_related_fields
             ancestor_links.append(found_link)
-            curr_model = get_remote_field_model(found_link)
-        return [self.model._meta.get_ancestor_link(get_remote_field_model(related_field)).name]
+            curr_model = found_link.remote_field.model
+        return [self.model._meta.get_ancestor_link(related_field.remote_field.model).name]
 
     def get_filters(self):
         if callable(self.filters):
@@ -129,7 +110,7 @@ class ReverseUnique(ForeignObject):
             return self.filters
 
     def _get_extra_restriction(self, alias, related_alias):
-        remote_model = get_remote_field_model(self)
+        remote_model = self.remote_field.model
         qs = remote_model.objects.filter(self.get_filters()).query
         my_table = self.model._meta.db_table
         rel_table = remote_model._meta.db_table
@@ -151,16 +132,16 @@ class ReverseUnique(ForeignObject):
         return self.get_filters()
 
     def get_path_info(self, *args, **kwargs):
-        ret = super(ReverseUnique, self).get_path_info(*args, **kwargs)
+        ret = super().get_path_info(*args, **kwargs)
         assert len(ret) == 1
         return [ret[0]._replace(direct=False)]
 
     def contribute_to_class(self, cls, name):
-        super(ReverseUnique, self).contribute_to_class(cls, name)
+        super().contribute_to_class(cls, name)
         setattr(cls, self.name, ReverseUniqueDescriptor(self))
 
     def deconstruct(self):
-        name, path, args, kwargs = super(ReverseUnique, self).deconstruct()
+        name, path, args, kwargs = super().deconstruct()
         kwargs['filters'] = self.filters
         if self.through is not None:
             kwargs['through'] = self.through
