@@ -1,8 +1,8 @@
 django-reverse-unique
 =====================
 
-.. image:: https://travis-ci.org/akaariai/django-reverse-unique.svg?branch=master
-    :target: https://travis-ci.org/akaariai/django-reverse-unique
+.. image:: https://github.com/akaariai/django-reverse-unique/workflows/Test/badge.svg
+    :target: https://github.com/akaariai/django-reverse-unique/actions
     :alt: Build Status
 
 .. image:: https://coveralls.io/repos/akaariai/django-reverse-unique/badge.svg?branch=master

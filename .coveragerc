@@ -2,3 +2,4 @@
 source = reverse_unique
 branch = 1
 omit = reverse_unique/test*
+relative_files = 1
